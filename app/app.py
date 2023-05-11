@@ -6,21 +6,25 @@ import os
 
 endpoint_url = os.environ["ENDPOINT_URL"]
 region = os.environ["REGION"]
+docker_registry_url = os.environ["REGISTRY"]
 
 app = Flask(__name__)
 
+dynamodb, response = connect_dynamodb(docker_registry_url, endpoint_url, region)
+
 @app.route('/health')
-def health():
-    docker_registry_url = "https://docker.registry.com/somepath"
-    response = connect_dynamodb(docker_registry_url, endpoint_url, region)[1]
+def health(response):
     return response
 
 @app.route('/secret')
-def secret():
-    code_name = "thedoctor"
-    secret_code = get_secret_code_from_dynamodb(code_name)
-    response = {"codeName": code_name, "secretCode": secret_code}
-    return jsonify(response)
+def secret(dynamodb):
+    try:
+        code_name = os.environ["CODENAME"]
+        secret_code = get_secret_code_from_dynamodb(dynamodb, code_name)
+        response = {"codeName": code_name, "secretCode": secret_code}
+        return jsonify(response)
+    except Exception as e:
+        return jsonify({"error": e})
 
 @app.errorhandler(404)
 def page_not_found(e):

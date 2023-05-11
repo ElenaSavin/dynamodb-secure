@@ -1,14 +1,16 @@
 import boto3
 import json
-from botocore.exceptions import EndpointConnectionError
 
 def connect_dynamodb(docker_registry_url, endpoint_url, region):
     try:
-        client = boto3.client('dynamodb', endpoint_url=endpoint_url, region_name=region)
-    except Exception(EndpointConnectionError):
-        return (json.dumps({"status": "Not Healthy!", "error": EndpointConnectionError, "container": docker_registry_url}))
-    return client, json.dumps({"status": "Healthy!", "container": docker_registry_url})
+        dynamodb = boto3.resource('dynamodb', endpoint_url=endpoint_url, region_name=region)
+    except Exception as e:
+        return None, (json.dumps({"status": "Not Healthy!", "error": e, "container": docker_registry_url}))
+    return dynamodb, json.dumps({"status": "Healthy!", "container": docker_registry_url})
     
 
-def get_secret_code_from_dynamodb():
-    return 1
+def get_secret_code_from_dynamodb(dynamodb, code_name):
+    table = dynamodb.Table('devops-challenge')
+    response = table.get_item(Key={'codeName': code_name})
+    secret_code = response['Item']['secretCode']
+    return secret_code
