@@ -5,7 +5,7 @@ def connect_dynamodb(docker_registry_url, endpoint_url, region):
     try:
         dynamodb = boto3.resource('dynamodb', endpoint_url=endpoint_url, region_name=region)
     except Exception as e:
-        return None, (json.dumps({"status": "Not Healthy!", "error": e, "container": docker_registry_url}))
+        return None, (json.dumps({"status": "Not Healthy!", "error": str(e), "container": docker_registry_url}))
     return dynamodb, json.dumps({"status": "Healthy!", "container": docker_registry_url})
     
 

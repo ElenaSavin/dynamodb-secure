@@ -13,18 +13,18 @@ app = Flask(__name__)
 dynamodb, response = connect_dynamodb(docker_registry_url, endpoint_url, region)
 
 @app.route('/health')
-def health(response):
+def health():
     return response
 
 @app.route('/secret')
-def secret(dynamodb):
+def secret():
     try:
         code_name = os.environ["CODENAME"]
         secret_code = get_secret_code_from_dynamodb(dynamodb, code_name)
         response = {"codeName": code_name, "secretCode": secret_code}
         return jsonify(response)
     except Exception as e:
-        return jsonify({"error": e})
+        return jsonify({"error retrieving secret": str(e)})
 
 @app.errorhandler(404)
 def page_not_found(e):
