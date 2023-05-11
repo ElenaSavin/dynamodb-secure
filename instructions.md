@@ -46,6 +46,8 @@ The response from `/secret` should look like:
 1. Use `git init` before starting to work and commit your changes as you would normally
 2. Think *security*: Avoid exposing secrets or sensitive information in any way
 3. Examples of different routers in [Ruby](https://github.com/sinatra/sinatra), [Python](http://flask.pocoo.org/), [Go](https://golang.org/pkg/net/http/) and [Node](https://www.npmjs.com/package/http-server) (you're more than welcome to use any language / project of choice)
+
+
 4. Structure the project in a maintainable logic way, you may use `/example`
 ---
 
