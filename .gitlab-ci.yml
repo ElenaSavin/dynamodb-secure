@@ -4,6 +4,8 @@ variables:
   ENDPOINT_URL="http://localhost:8000"
   REGION="eu-west-1"
   REGISTRY="https://docker.registry.com/somepath"
+  TABLE_NAME="devops_challange"
+  CODE_NAME="codeDoctor"
 build:
   script:
     - docker-compose up --build -d

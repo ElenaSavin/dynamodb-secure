@@ -1,12 +1,21 @@
 from flask import Flask, request, jsonify
 import requests
 from datetime import datetime
-from dynamo_utils import get_secret_code_from_dynamodb, connect_dynamodb
+from dynamo_utils import init, get_secret_code_from_dynamodb, connect_dynamodb
 import os
+import secrets
+import string
+
+alphabet = string.ascii_letters + string.digits
+
+secret_code = ''.join(secrets.choice(alphabet) for i in range(20))
+#secret_code = password.encode("utf-8")
 
 endpoint_url = os.environ["ENDPOINT_URL"]
 region = os.environ["REGION"]
 docker_registry_url = os.environ["REGISTRY"]
+code_name = os.environ["CODE_NAME"]
+table_name = os.environ["TABLE_NAME"]
 
 app = Flask(__name__)
 
@@ -18,13 +27,7 @@ def health():
 
 @app.route('/secret')
 def secret():
-    try:
-        code_name = os.environ["CODENAME"]
-        secret_code = get_secret_code_from_dynamodb(dynamodb, code_name)
-        response = {"codeName": code_name, "secretCode": secret_code}
-        return jsonify(response)
-    except Exception as e:
-        return jsonify({"error retrieving secret": str(e)})
+    return get_secret_code_from_dynamodb(dynamodb, table_name, code_name)
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -40,6 +43,7 @@ def page_not_found(e):
     return "404 Page not found"
 
 if __name__ == '__main__':
+    init(dynamodb, secret_code, table_name, code_name)
     app.debug = True
     app.run(host="0.0.0.0")
     
