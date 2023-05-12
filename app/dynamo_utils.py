@@ -17,8 +17,8 @@ def get_secret_code_from_dynamodb(dynamodb, table_name, code_name):
     try:
         table = dynamodb.Table(table_name)
         response = table.get_item(Key={'codeName': code_name})
-        secret_code = response['Item']['secretCode']
-        return json.dumps({"codeName": code_name, "secretCode": secret_code})
+        secret_code = response['Item']['secretCode'].value
+        return json.dumps({"codeName": code_name, "secretCode": secret_code.decode('utf-8')})
     except ClientError as e:
         return json.dumps({"error retrieving secret": str(e)})
 
