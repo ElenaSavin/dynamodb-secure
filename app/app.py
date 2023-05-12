@@ -6,6 +6,14 @@ import os
 import secrets
 import string
 import base64
+import logging
+
+# Configure logging
+log_file = "application.log"
+log_level = logging.DEBUG
+
+logging.basicConfig(filename=log_file, level=log_level)
+
 
 # Set variables
 alphabet = string.ascii_letters + string.digits
@@ -30,6 +38,7 @@ def health():
     Returns:
         str: JSON response with health status and container information
     """
+    logging.info("Health endpoint called")
     return response
 
 @app.route('/secret')
@@ -40,6 +49,7 @@ def secret():
     Returns:
         str: JSON response with the secret code
     """
+    logging.info("Secret endpoint called")
     return get_secret_code_from_dynamodb(dynamodb, table_name, code_name)
 
 @app.errorhandler(404)

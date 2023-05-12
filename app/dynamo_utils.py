@@ -22,8 +22,11 @@ def connect_dynamodb(docker_registry_url, endpoint_url, region):
     try:
         dynamodb = boto3.resource('dynamodb', endpoint_url=endpoint_url, region_name=region)
     except Exception as e:
+        logging.error(f"Not able to conect to dynamodb, ERROR: {e}")
         return None, (json.dumps({"status": "Not Healthy!", "error": str(e), "container": docker_registry_url}))
+    logging.info("Connected to dynamo successfully")
     return dynamodb, json.dumps({"status": "Healthy!", "container": docker_registry_url})
+
 
 
 def get_secret_code_from_dynamodb(dynamodb, table_name, code_name):
@@ -45,6 +48,7 @@ def get_secret_code_from_dynamodb(dynamodb, table_name, code_name):
         secret_code = response['Item']['secretCode'].value
         return json.dumps({"codeName": code_name, "secretCode": secret_code.decode('utf-8')})
     except ClientError as e:
+        logging.error(f"error retrieving secret: str({e})")
         return json.dumps({"error retrieving secret": str(e)})
 
 
@@ -84,9 +88,10 @@ def create_dynamodb_table(table_name, dynamodb):
 
     except ClientError as e:
         if e.response['Error']['Code'] == 'ResourceInUseException':
+            logging.error(f"Table already exists")
             return table_name
         else:
-            print("Could not create table. This means the DynamoDB is not alive! Restart application!")
+            logging.error("Could not create table. This means the DynamoDB is not alive! Restart application!")
             return None
 
 
@@ -108,26 +113,28 @@ def insert_secret_into_dynamodb(dynamodb, secret_code, table_name, code_name):
         table = dynamodb.Table(table_name)
 
         # Insert the encrypted secret into DynamoDB
-        table.put_item(Item={'codeName': code_name, 'secretCode': secret_code
-except ClientError as e:
-        print(json.dumps({"Error inserting secret into DynamoDB": str(e)}))
+        table.put_item({'codeName': code_name, 'secretCode': secret_code})
+        logging.info("mock secret inserted successfully")
+    except ClientError as e:
+            logging.error(json.dumps({"Error inserting secret into DynamoDB": str(e)}))
 
-def init(dynamodb, secret_code, table_name, code_name):
-    """
-    Initializes the application by creating the DynamoDB table and inserting the secret code.
-    Args:
-    dynamodb (boto3.resource): The DynamoDB resource object.
-    secret_code (bytes): The secret code to be inserted.
-    table_name (str): The name of the DynamoDB table.
-    code_name (str): The code name associated with the secret code.
+    def init(dynamodb, secret_code, table_name, code_name):
+        """
+        Initializes the application by creating the DynamoDB table and inserting the secret code.
+        Args:
+        dynamodb (boto3.resource): The DynamoDB resource object.
+        secret_code (bytes): The secret code to be inserted.
+        table_name (str): The name of the DynamoDB table.
+        code_name (str): The code name associated with the secret code.
 
-    Returns:
-        None
+        Returns:
+            None
 
-    """
-    try:
-        create_dynamodb_table(table_name, dynamodb)
-        insert_secret_into_dynamodb(dynamodb, secret_code, table_name, code_name)
-    except Exception as e:
-        print(f"Encountered error {e}, shutting down")
-        sys.exit()
+        """
+        try:
+            create_dynamodb_table(table_name, dynamodb)
+            insert_secret_into_dynamodb(dynamodb, secret_code, table_name, code_name)
+        except Exception as e:
+            logging.error(f"Encountered error {e}, shutting down")
+            sys.exit()
+        logging.info("Initiated successfully")
