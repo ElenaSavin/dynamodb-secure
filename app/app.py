@@ -39,7 +39,7 @@ def health():
         str: JSON response with health status and container information
     """
     logging.info("Health endpoint called")
-    return response
+    return jsonify(response)
 
 @app.route('/secret')
 def secret():
@@ -50,7 +50,7 @@ def secret():
         str: JSON response with the secret code
     """
     logging.info("Secret endpoint called")
-    return get_secret_code_from_dynamodb(dynamodb, table_name, code_name)
+    return jsonify(get_secret_code_from_dynamodb(dynamodb, table_name, code_name))
 
 @app.errorhandler(404)
 def page_not_found(e):

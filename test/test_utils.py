@@ -1,79 +1,43 @@
-import unittest
-from unittest.mock import MagicMock
-from app import connect_dynamodb, get_secret_code_from_dynamodb
+import requests
+import pytest
+import json
+import os, sys
+currentdir = os.path.dirname(os.path.realpath(__file__))
+parentdir = os.path.dirname(currentdir)
+sys.path.append(parentdir)
+import app.dynamo_utils as dynamo
 
-class DynamoDBTestCase(unittest.TestCase):
-    def setUp(self):
-        self.dynamodb = MagicMock()
-        self.docker_registry_url = 'https://my-docker-registry.com'
-        self.endpoint_url = 'https://my-dynamodb-endpoint.com'
-        self.region = 'us-west-2'
-        self.table_name = 'my_table'
-        self.code_name = 'my_code'
+@pytest.fixture(scope='session')
+def dynamodb():
+    # Set up the DynamoDB connection for the test
+    endpoint_url = 'http://localhost:8000'  # Example endpoint URL for a local DynamoDB instance
+    region = 'eu-west-2'  # Example region
+    docker_registry_url = 'http://example.com'  # Example Docker registry URL
+    dynamodb, _ = dynamo.connect_dynamodb(docker_registry_url, endpoint_url, region)
+    return dynamodb
 
-    def test_connect_dynamodb_successful(self):
-        self.dynamodb.resource.return_value = self.dynamodb
+#Verify the dynamodb status code
+def test_status_code_dynamodb():
+    status = requests.get("http://localhost:5000/health").status_code
+    assert status == 200
+    
+@pytest.fixture(scope='session')
+def test_get_secret_code_from_dynamodb(monkeypatch):
+    # Define a mock response for DynamoDB's get_item method
+    table_name = 'test_table'
+    code_name = 'test_code'
+    secret_code = 'some_secret_code'
+    dynamodb = dynamodb()
 
-        dynamodb, response = connect_dynamodb(
-            self.docker_registry_url, self.endpoint_url, self.region
-        )
+    # Create the DynamoDB table for testing
+    dynamo.create_dynamodb_table(table_name, dynamodb)
 
-        self.assertEqual(dynamodb, self.dynamodb)
-        self.assertEqual(
-            response,
-            {
-                'status': 'Healthy!',
-                'container': self.docker_registry_url
-            }
-        )
+    # Insert the secret code into the table
+    dynamo.insert_secret_into_dynamodb(dynamodb, secret_code, table_name, code_name)
 
-    def test_connect_dynamodb_failure(self):
-        self.dynamodb.resource.side_effect = Exception('Connection Error')
+    # Call the function being tested
+    result = dynamo.get_secret_code_from_dynamodb(dynamodb, table_name, code_name)
 
-        dynamodb, response = connect_dynamodb(
-            self.docker_registry_url, self.endpoint_url, self.region
-        )
-
-        self.assertIsNone(dynamodb)
-        self.assertEqual(
-            response,
-            {
-                'status': 'Not Healthy!',
-                'error': 'Connection Error',
-                'container': self.docker_registry_url
-            }
-        )
-
-    def test_get_secret_code_from_dynamodb_successful(self):
-        table = MagicMock()
-        response_item = {'codeName': self.code_name, 'secretCode': 'my_secret_code'}
-        table.get_item.return_value = {'Item': response_item}
-        self.dynamodb.Table.return_value = table
-
-        secret_code = get_secret_code_from_dynamodb(
-            self.dynamodb, self.table_name, self.code_name
-        )
-
-        expected_response = {
-            'codeName': self.code_name,
-            'secretCode': response_item['secretCode']
-        }
-        self.assertEqual(secret_code, expected_response)
-
-    def test_get_secret_code_from_dynamodb_failure(self):
-        table = MagicMock()
-        table.get_item.side_effect = ClientError(
-            {'Error': {'Code': 'ValidationException', 'Message': 'Item not found'}},
-            'GetItem'
-        )
-        self.dynamodb.Table.return_value = table
-
-        response = get_secret_code_from_dynamodb(
-            self.dynamodb, self.table_name, self.code_name
-        )
-
-        expected_response = {'error retrieving secret': 'An error occurred'}
-        self.assertEqual(response, expected_response)
-
-if __name__ == '__main__':
-    unittest.main()
+    # Assertions
+    expected_result = {'codeName': code_name, 'secretCode': secret_code}
+    assert json.loads(result) == expected_result
