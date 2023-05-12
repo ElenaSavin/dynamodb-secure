@@ -6,14 +6,39 @@ import logging
 import sys
 
 def connect_dynamodb(docker_registry_url, endpoint_url, region):
+    """
+    Connects to the DynamoDB service and returns a DynamoDB resource object.
+
+    Args:
+        docker_registry_url (str): The URL of the Docker registry.
+        endpoint_url (str): The endpoint URL of the DynamoDB service.
+        region (str): The AWS region where the DynamoDB service is located.
+
+    Returns:
+        dynamodb (boto3.resource): The DynamoDB resource object.
+        response (str): JSON response indicating the connection status.
+
+    """
     try:
         dynamodb = boto3.resource('dynamodb', endpoint_url=endpoint_url, region_name=region)
     except Exception as e:
         return None, (json.dumps({"status": "Not Healthy!", "error": str(e), "container": docker_registry_url}))
     return dynamodb, json.dumps({"status": "Healthy!", "container": docker_registry_url})
-    
+
 
 def get_secret_code_from_dynamodb(dynamodb, table_name, code_name):
+    """
+    Retrieves the secret code from the specified DynamoDB table.
+
+    Args:
+        dynamodb (boto3.resource): The DynamoDB resource object.
+        table_name (str): The name of the DynamoDB table.
+        code_name (str): The code name to retrieve the secret code.
+
+    Returns:
+        str: JSON response containing the codeName and secretCode.
+
+    """
     try:
         table = dynamodb.Table(table_name)
         response = table.get_item(Key={'codeName': code_name})
@@ -22,7 +47,19 @@ def get_secret_code_from_dynamodb(dynamodb, table_name, code_name):
     except ClientError as e:
         return json.dumps({"error retrieving secret": str(e)})
 
+
 def create_dynamodb_table(table_name, dynamodb):
+    """
+    Creates a DynamoDB table with the specified table name.
+
+    Args:
+        table_name (str): The name of the DynamoDB table.
+        dynamodb (boto3.resource): The DynamoDB resource object.
+
+    Returns:
+        str: The name of the created table or the existing table.
+
+    """
     try:
         dynamodb.create_table(
             TableName=table_name,
@@ -49,25 +86,48 @@ def create_dynamodb_table(table_name, dynamodb):
         if e.response['Error']['Code'] == 'ResourceInUseException':
             return table_name
         else:
-            print("Could not create table. this means the dynamodb is not alive!!! restart application!")
+            print("Could not create table. This means the DynamoDB is not alive! Restart application!")
             return None
-            
+
+
 def insert_secret_into_dynamodb(dynamodb, secret_code, table_name, code_name):
+    """
+    Inserts the secret code into the specified DynamoDB table.
+
+    Args:
+        dynamodb (boto3.resource): The DynamoDB resource object.
+        secret_code (bytes): The secret code to be inserted.
+        table_name (str): The name of the DynamoDB table.
+        code_name (str): The code name associated with the secret code.
+
+    Returns:
+        None
+
+    """
     try:
         table = dynamodb.Table(table_name)
 
         # Insert the encrypted secret into DynamoDB
-        table.put_item(Item={'codeName': code_name, 'secretCode': secret_code})
-        print(json.dumps({"status": "Secret inserted successfully."}))
-
-    except ClientError as e:
+        table.put_item(Item={'codeName': code_name, 'secretCode': secret_code
+except ClientError as e:
         print(json.dumps({"Error inserting secret into DynamoDB": str(e)}))
 
 def init(dynamodb, secret_code, table_name, code_name):
+    """
+    Initializes the application by creating the DynamoDB table and inserting the secret code.
+    Args:
+    dynamodb (boto3.resource): The DynamoDB resource object.
+    secret_code (bytes): The secret code to be inserted.
+    table_name (str): The name of the DynamoDB table.
+    code_name (str): The code name associated with the secret code.
+
+    Returns:
+        None
+
+    """
     try:
         create_dynamodb_table(table_name, dynamodb)
         insert_secret_into_dynamodb(dynamodb, secret_code, table_name, code_name)
     except Exception as e:
         print(f"Encountered error {e}, shutting down")
         sys.exit()
-
