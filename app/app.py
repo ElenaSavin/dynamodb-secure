@@ -5,11 +5,14 @@ from dynamo_utils import init, get_secret_code_from_dynamodb, connect_dynamodb
 import os
 import secrets
 import string
+import base64
 
 alphabet = string.ascii_letters + string.digits
 
-secret_code = ''.join(secrets.choice(alphabet) for i in range(20))
-#secret_code = password.encode("utf-8")
+password = ''.join(secrets.choice(alphabet) for i in range(20))
+print(password)
+secret_code=base64.b64encode(password.encode("utf-8"))  
+
 
 endpoint_url = os.environ["ENDPOINT_URL"]
 region = os.environ["REGION"]
