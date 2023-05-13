@@ -2,7 +2,7 @@ version: '3'
 
 services:
   app:
-    build: .
+    image: lenasavin/interview:zesty
     ports:
       - 5000:5000
     env_file: .env
