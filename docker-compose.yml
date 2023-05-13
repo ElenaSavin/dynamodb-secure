@@ -2,13 +2,22 @@ version: '3'
 
 services:
   app:
-    image: your-docker-registry/your-image-name:your-tag
+    build: .
     ports:
       - 5000:5000
-    environment:
-      - CODENAME=thedoctor
+    env_file: .env
+    depends_on:
+      - dynamodb
+    networks:
+      - my-network
+    
 
   dynamodb:
     image: zestyco/dynamodb-challenge:amd
     ports:
       - 8000:8000
+    networks:
+      - my-network
+networks:
+  my-network:
+    driver: bridge

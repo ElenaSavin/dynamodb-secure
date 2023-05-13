@@ -1,0 +1,20 @@
+name: Zesty home project
+run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
+on: [push]
+jobs:
+  Application-rise:
+    runs-on: python:3.9
+    steps:
+      - name: Start Containers
+        run: docker-compose up --build -d
+        run: sleep 5
+
+      - name: Query results
+        run: curl 127.0.0.1:5000/secret | jq '.secretCode'
+        run: curl 127.0.0.1:5000/health | jq '.'
+
+      - name: Run tests
+        run: cd test && pytest
+      # Destroy 
+      - run: docker-compose down
+      

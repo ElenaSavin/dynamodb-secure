@@ -9,11 +9,9 @@ import base64
 import logging
 
 # Configure logging
-log_file = "application.log"
 log_level = logging.DEBUG
-
-logging.basicConfig(filename=log_file, level=log_level)
-
+log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s" 
+logging.basicConfig(format = log_format, level = logging.ERROR)
 
 # Set variables
 alphabet = string.ascii_letters + string.digits
