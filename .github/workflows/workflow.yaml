@@ -20,7 +20,9 @@ jobs:
         run: curl 127.0.0.1:5000/secret | jq '.secretCode'
          
       - name: Run tests
-        run: cd test && pytest
+        run: |
+        pip3 install -r requirements.txt
+        cd test && pytest
       # Destroy 
       - run: docker-compose down
       
