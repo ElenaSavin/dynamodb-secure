@@ -2,9 +2,14 @@ name: Zesty home project
 run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
 on: [push]
 jobs:
-  Application-rise:
-    runs-on: python:3.9
+  API-DynamoDB:
+    runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
       - name: Start Containers
         run: docker-compose up --build -d && sleep 5
 
